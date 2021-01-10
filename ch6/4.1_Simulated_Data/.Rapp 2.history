@@ -1,0 +1,1256 @@
+pi_fn <- function(pi, j) {#
+    if (pi == 'marginal') {#
+      dat0[, j] <- x_tilde_mpi[, j]#
+    } else if (pi == 'conditional') {#
+      dat0[, j] <- x_tilde_cpi[, j]#
+    }#
+    test0 <- dat0[-idx, ]#
+    if (type == 'regression') {#
+      lm_loss0 <- (test$y - predict(lm_fit, newdata = test0))^2#
+      rf_loss0 <- (test$y - predict(rf_fit, test0)$predictions)^2#
+      nn_loss0 <- (test$y - predict(nn_fit, newdata = test0))^2#
+      svm_loss0 <- (test$y - predict(svm_fit, newdata = test0))^2#
+    } else if (type == 'classification') {#
+      lm_yhat0 <- predict(lm_fit, newdata = test0, type = 'response')#
+      lm_loss0 <- -(test$y * log(lm_yhat0) + (1 - test$y) * log(1 - lm_yhat0))#
+      rf_yhat0 <- rowMeans(#
+        predict(rf_fit, data = test0, predict.all = TRUE)$predictions#
+      )#
+      rf_loss0 <- -(test$y * log(rf_yhat0) + (1 - test$y) * log(1 - rf_yhat0))#
+      nn_yhat0 <- predict(nn_fit, newdata = test0)#
+      nn_loss0 <- -(test$y * log(nn_yhat0) + (1 - test$y) * log(1 - nn_yhat0))#
+      svm_yhat0 <- attr(#
+        predict(svm_fit, newdata = test0, probability = TRUE), 'probabilities'#
+      )[, 1]#
+      svm_loss0 <- -(test$y * log(svm_yhat0) + (1 - test$y) * log(1 - svm_yhat0))#
+      rm(lm_yhat0, rf_yhat0, nn_yhat0, svm_yhat0)#
+    }#
+    delta <- data.table(#
+       'LM' = lm_loss0 - lm_loss, #
+       'RF' = rf_loss0 - rf_loss,#
+       'NN' = nn_loss0 - nn_loss, #
+       'SVM' = svm_loss0 - svm_loss#
+    )#
+    t.test_lm <- t.test(delta$LM, alternative = 'greater')#
+    t.test_rf <- t.test(delta$RF, alternative = 'greater')#
+    t.test_nn <- t.test(delta$NN, alternative = 'greater')#
+    t.test_svm <- t.test(delta$SVM, alternative = 'greater')#
+    out <- data.table(#
+      'Model' = c('LM', 'RF', 'NN', 'SVM'),#
+      'Beta' = beta[j],#
+      'Test' = pi,#
+      'PI' = c(#
+        mean(delta$LM), mean(delta$RF), mean(delta$NN), mean(delta$SVM)#
+      ),#
+      'SE' = c(#
+        sd(delta$LM) / sqrt(n/3), sd(delta$RF) / sqrt(n/3),#
+        sd(delta$NN) / sqrt(n/3), sd(delta$SVM) / sqrt(n/3)#
+      ),#
+      't' = c(#
+        t.test_lm$statistic, t.test_rf$statistic, #
+        t.test_nn$statistic, t.test_svm$statistic#
+      ),#
+      'p.value' = c(#
+        t.test_lm$p.value, t.test_rf$p.value,#
+        t.test_nn$p.value, t.test_svm$p.value#
+      )#
+    )#
+    return(out)#
+  }
+a <- pi_fn('marginal', 1)
+a <- pi_fn('conditional', 1)
+pi_fn <- function(pi, j) {#
+    if (pi == 'marginal') {#
+      dat0[, j] <- x_tilde_mpi[, j]#
+    } else if (pi == 'conditional') {#
+      dat0[, j] <- x_tilde_cpi[, j]#
+    }#
+    test0 <- dat0[-idx, ]#
+    if (type == 'regression') {#
+      lm_loss0 <- (test$y - predict(lm_fit, newdata = test0))^2#
+      rf_loss0 <- (test$y - predict(rf_fit, test0)$predictions)^2#
+      nn_loss0 <- (test$y - predict(nn_fit, newdata = test0))^2#
+      svm_loss0 <- (test$y - predict(svm_fit, newdata = test0))^2#
+    } else if (type == 'classification') {#
+      lm_yhat0 <- predict(lm_fit, newdata = test0, type = 'response')#
+      lm_loss0 <- -(test$y * log(lm_yhat0) + (1 - test$y) * log(1 - lm_yhat0))#
+      rf_yhat0 <- rowMeans(#
+        predict(rf_fit, data = test0, predict.all = TRUE)$predictions#
+      )#
+      rf_loss0 <- -(test$y * log(rf_yhat0) + (1 - test$y) * log(1 - rf_yhat0))#
+      nn_yhat0 <- predict(nn_fit, newdata = test0)#
+      nn_loss0 <- -(test$y * log(nn_yhat0) + (1 - test$y) * log(1 - nn_yhat0))#
+      svm_yhat0 <- attr(#
+        predict(svm_fit, newdata = test0, probability = TRUE), 'probabilities'#
+      )[, 1]#
+      svm_loss0 <- -(test$y * log(svm_yhat0) + (1 - test$y) * log(1 - svm_yhat0))#
+      rm(lm_yhat0, rf_yhat0, nn_yhat0, svm_yhat0)#
+    }#
+    delta <- data.table(#
+       'LM' = lm_loss0 - lm_loss, #
+       'RF' = rf_loss0 - rf_loss,#
+       'NN' = nn_loss0 - nn_loss, #
+       'SVM' = svm_loss0 - svm_loss#
+    )#
+    t.test_lm <- t.test(delta$LM, alternative = 'greater')#
+    t.test_rf <- t.test(delta$RF, alternative = 'greater')#
+    t.test_nn <- t.test(delta$NN, alternative = 'greater')#
+    t.test_svm <- t.test(delta$SVM, alternative = 'greater')#
+    out <- data.table(#
+      'Model' = c('LM', 'RF', 'NN', 'SVM'),#
+      'Beta' = beta[j],#
+      'Test' = pi,#
+      'PI' = c(#
+        mean(delta$LM), mean(delta$RF), mean(delta$NN), mean(delta$SVM)#
+      ),#
+      'SE' = c(#
+        sd(delta$LM) / sqrt(n/3), sd(delta$RF) / sqrt(n/3),#
+        sd(delta$NN) / sqrt(n/3), sd(delta$SVM) / sqrt(n/3)#
+      ),#
+      't' = c(#
+        t.test_lm$statistic, t.test_rf$statistic, #
+        t.test_nn$statistic, t.test_svm$statistic#
+      ),#
+      'p.value' = c(#
+        t.test_lm$p.value, t.test_rf$p.value,#
+        t.test_nn$p.value, t.test_svm$p.value#
+      )#
+    )#
+    return(out)#
+  }#
+  out <- foreach(j = seq_len(p), .combine = rbind) %:% #
+    foreach(pi = c('marginal', 'conditional'), .combine = rbind) %do% #
+    pi_fn(pi, j)
+a <- pi_fn('marginal', 1)
+head(A)
+head(a)
+head(delta)
+head(lm_loss0)
+pi <- 'marginal'
+j <- 1
+if (pi == 'marginal') {#
+      dat0[, j] <- x_tilde_mpi[, j]#
+    } else if (pi == 'conditional') {#
+      dat0[, j] <- x_tilde_cpi[, j]#
+    }#
+    test0 <- dat0[-idx, ]#
+    if (type == 'regression') {#
+      lm_loss0 <- (test$y - predict(lm_fit, newdata = test0))^2#
+      rf_loss0 <- (test$y - predict(rf_fit, test0)$predictions)^2#
+      nn_loss0 <- (test$y - predict(nn_fit, newdata = test0))^2#
+      svm_loss0 <- (test$y - predict(svm_fit, newdata = test0))^2#
+    } else if (type == 'classification') {#
+      lm_yhat0 <- predict(lm_fit, newdata = test0, type = 'response')#
+      lm_loss0 <- -(test$y * log(lm_yhat0) + (1 - test$y) * log(1 - lm_yhat0))#
+      rf_yhat0 <- rowMeans(#
+        predict(rf_fit, data = test0, predict.all = TRUE)$predictions#
+      )#
+      rf_loss0 <- -(test$y * log(rf_yhat0) + (1 - test$y) * log(1 - rf_yhat0))#
+      nn_yhat0 <- predict(nn_fit, newdata = test0)#
+      nn_loss0 <- -(test$y * log(nn_yhat0) + (1 - test$y) * log(1 - nn_yhat0))#
+      svm_yhat0 <- attr(#
+        predict(svm_fit, newdata = test0, probability = TRUE), 'probabilities'#
+      )[, 1]#
+      svm_loss0 <- -(test$y * log(svm_yhat0) + (1 - test$y) * log(1 - svm_yhat0))#
+      rm(lm_yhat0, rf_yhat0, nn_yhat0, svm_yhat0)#
+    }#
+    delta <- data.table(#
+        'LM' = lm_loss0 - lm_loss, #
+        'RF' = rf_loss0 - rf_loss,#
+        'NN' = nn_loss0 - nn_loss, #
+       'SVM' = svm_loss0 - svm_loss#
+    )
+head(delta)
+sum(is.na(delta))
+tail(delta)
+delta[is.na(RF), ]
+head(rf_yhat)
+rf_yhat <- rowMeans(#
+      predict(rf_fit, data = test, predict.all = TRUE)$predictions#
+    )
+head(rf_yhat)
+max(rf_yhat)
+min(rf_yhat)
+1e-1
+1e-7
+# Loop function#
+loop <- function(b, sim, type, rho) {#
+  # Simulate data#
+  beta <- beta[sample.int(p)]#
+  Sigma <- toeplitz(rho^(0:(p - 1)))#
+  x <- matrix(rnorm(n * p), ncol = p) %*% chol(Sigma)#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  if (sim == 'linear') {#
+    y <- x %*% beta + rnorm(n)#
+  } else if (sim == 'nonlinear') {#
+    idx <- x < -qnorm(0.75) | x > qnorm(0.75)#
+    xx <- matrix(0, nrow = n, ncol = p)#
+    xx[idx] <- 0#
+    xx[!idx] <- 1#
+    y <- xx %*% beta + rnorm(n)#
+  }#
+  if (type == 'classification') {#
+    y <- if_else(y > 0, 1, 0)#
+  }#
+  dat <- dat0 <- data.frame(x, y)#
+  # Split into training and test sets#
+  idx <- seq_len(n * 2/3)#
+  train <- dat[idx, ]#
+  test <- dat[-idx, ]#
+  # Fit models, compute loss#
+  if (type == 'regression') {#
+    # Linear model#
+    lm_fit <- lm(y ~ ., data = train)#
+    lm_yhat <- predict(lm_fit, newdata = test)#
+    lm_loss <- (test$y - lm_yhat)^2#
+    # Random forest#
+    rf_fit <- ranger(y ~ ., data = train, num.trees = 50)#
+    rf_yhat <- predict(rf_fit, data = test)$predictions#
+    rf_loss <- (test$y - rf_yhat)^2#
+    # Neural network#
+    nn_fit <- nnet(y ~ ., data = train, size = 20, decay = 0.1, #
+                   linout = TRUE, trace = FALSE)#
+    nn_yhat <- predict(nn_fit, newdata = test)#
+    nn_loss <- (test$y - nn_yhat)^2#
+    # Support vector machine#
+    svm_fit <- svm(y ~ ., data = train, kernel = 'radial', fitted = FALSE)#
+    svm_yhat <- predict(svm_fit, newdata = test)#
+    svm_loss <- (test$y - svm_yhat)^2#
+  } else if (type == 'classification') {#
+    loss_fn <- function(observed, expected, eps = 1e-7) {#
+      # Padding against extreme predictions#
+      expected[expected == 1] <- 1 - eps#
+      expected[expected == 0] <- 0 + eps#
+      # Calculate cross-entropy#
+      -(observed * log(expected) + (1 - observed) * log(1 - expected))#
+    }#
+    # Linear model#
+    lm_fit <- glm(y ~ ., family = binomial, data = train)#
+    lm_yhat <- predict(lm_fit, newdata = test, type = 'response')#
+    lm_loss <- loss_fn(test$y, lm_yhat)#
+    # Random forest#
+    rf_fit <- ranger(y ~ ., data = train, num.trees = 50, classification = TRUE)#
+    rf_yhat <- rowMeans(#
+      predict(rf_fit, data = test, predict.all = TRUE)$predictions#
+    )#
+    rf_loss <- loss_fn(test$y, rf_yhat)#
+    # Neural network#
+    nn_fit <- nnet(y ~ ., data = train, size = 20, decay = 0.1, trace = FALSE)#
+    nn_yhat <- predict(nn_fit, newdata = test)#
+    nn_loss <- loss_fn(test$y, nn_yhat)#
+    # Support vector machine#
+    svm_fit <- svm(y ~ ., data = train, kernel = 'radial', fitted = FALSE,#
+                   type = 'C-classification', probability = TRUE)#
+    svm_yhat <- attr(#
+      predict(svm_fit, newdata = test, probability = TRUE), 'probabilities'#
+    )[, 1]#
+    svm_los <- loss_fn(test$y, svm_yhat)#
+  }#
+  rm(lm_yhat, rf_yhat, nn_yhat, svm_yhat)#
+  # Generate knockoff and permutation matrices#
+  x_tilde_cpi <- create.second_order(x)#
+  x_tilde_mpi <- x#
+  for (j in seq_len(p)) {#
+    x_tilde_mpi[, j] <- x[sample.int(n), j]#
+  }#
+  # Testing function#
+  pi_fn <- function(pi, j) {#
+    if (pi == 'marginal') {#
+      dat0[, j] <- x_tilde_mpi[, j]#
+    } else if (pi == 'conditional') {#
+      dat0[, j] <- x_tilde_cpi[, j]#
+    }#
+    test0 <- dat0[-idx, ]#
+    if (type == 'regression') {#
+      lm_loss0 <- (test$y - predict(lm_fit, newdata = test0))^2#
+      rf_loss0 <- (test$y - predict(rf_fit, test0)$predictions)^2#
+      nn_loss0 <- (test$y - predict(nn_fit, newdata = test0))^2#
+      svm_loss0 <- (test$y - predict(svm_fit, newdata = test0))^2#
+    } else if (type == 'classification') {#
+      lm_yhat0 <- predict(lm_fit, newdata = test0, type = 'response')#
+      lm_loss0 <- loss_fn(test$y, lm_yhat0)#
+      rf_yhat0 <- rowMeans(#
+        predict(rf_fit, data = test0, predict.all = TRUE)$predictions#
+      )#
+      rf_loss0 <- loss_fn(test$y, rf_yhat0)#
+      nn_yhat0 <- predict(nn_fit, newdata = test0)#
+      nn_loss0 <- loss_fn(test$y, nn_yhat0)#
+      svm_yhat0 <- attr(#
+        predict(svm_fit, newdata = test0, probability = TRUE), 'probabilities'#
+      )[, 1]#
+      svm_loss0 <- loss_fn(test$y, svm_yhat0)#
+      rm(lm_yhat0, rf_yhat0, nn_yhat0, svm_yhat0)#
+    }#
+    delta <- data.table(#
+        'LM' = lm_loss0 - lm_loss, #
+        'RF' = rf_loss0 - rf_loss,#
+        'NN' = nn_loss0 - nn_loss, #
+       'SVM' = svm_loss0 - svm_loss#
+    )#
+    t.test_lm <- t.test(delta$LM, alternative = 'greater')#
+    t.test_rf <- t.test(delta$RF, alternative = 'greater')#
+    t.test_nn <- t.test(delta$NN, alternative = 'greater')#
+    t.test_svm <- t.test(delta$SVM, alternative = 'greater')#
+    out <- data.table(#
+      'Model' = c('LM', 'RF', 'NN', 'SVM'),#
+       'Beta' = beta[j],#
+       'Test' = pi,#
+         'PI' = c(mean(delta$LM), mean(delta$RF), #
+                  mean(delta$NN), mean(delta$SVM)),#
+         'SE' = c(sd(delta$LM) / sqrt(n/3), sd(delta$RF) / sqrt(n/3), #
+                  sd(delta$NN) / sqrt(n/3), sd(delta$SVM) / sqrt(n/3)),#
+          't' = c(t.test_lm$statistic, t.test_rf$statistic, #
+                  t.test_nn$statistic, t.test_svm$statistic),#
+    'p.value' = c(t.test_lm$p.value, t.test_rf$p.value, #
+                  t.test_nn$p.value, t.test_svm$p.value))#
+    return(out)#
+  }#
+  out <- foreach(j = seq_len(p), .combine = rbind) %:% #
+    foreach(pi = c('marginal', 'conditional'), .combine = rbind) %do% #
+    pi_fn(pi, j)#
+  out[, Simulation := sim#
+    ][, Type := type#
+    ][, rho := rho]#
+  return(out)#
+}
+a <- loop(1, 'linear', 'classification', 0)
+a
+head(a)
+sum(is.na(a))
+# Load libraries, register cores#
+library(data.table)#
+library(knockoff)#
+library(ranger)#
+library(nnet)#
+library(e1071)#
+library(tidyverse)#
+library(doMC)#
+registerDoMC(8)#
+#
+# Set seed#
+set.seed(123, kind = "L'Ecuyer-CMRG")#
+#
+# Hyperparameters#
+n <- 1500#
+p <- 10#
+beta <- c(0, 0, -0.5, 0.5, -1, 1, -1.5, 1.5, -2, 2)#
+#
+# Loop function#
+loop <- function(b, sim, type, rho) {#
+  # Simulate data#
+  beta <- beta[sample.int(p)]#
+  Sigma <- toeplitz(rho^(0:(p - 1)))#
+  x <- matrix(rnorm(n * p), ncol = p) %*% chol(Sigma)#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  if (sim == 'linear') {#
+    y <- x %*% beta + rnorm(n)#
+  } else if (sim == 'nonlinear') {#
+    idx <- x < -qnorm(0.75) | x > qnorm(0.75)#
+    xx <- matrix(0, nrow = n, ncol = p)#
+    xx[idx] <- 0#
+    xx[!idx] <- 1#
+    y <- xx %*% beta + rnorm(n)#
+  }#
+  if (type == 'classification') {#
+    y <- if_else(y > 0, 1, 0)#
+  }#
+  dat <- dat0 <- data.frame(x, y)#
+  # Split into training and test sets#
+  idx <- seq_len(n * 2/3)#
+  train <- dat[idx, ]#
+  test <- dat[-idx, ]#
+  # Fit models, compute loss#
+  if (type == 'regression') {#
+    # Linear model#
+    lm_fit <- lm(y ~ ., data = train)#
+    lm_yhat <- predict(lm_fit, newdata = test)#
+    lm_loss <- (test$y - lm_yhat)^2#
+    # Random forest#
+    rf_fit <- ranger(y ~ ., data = train, num.trees = 50)#
+    rf_yhat <- predict(rf_fit, data = test)$predictions#
+    rf_loss <- (test$y - rf_yhat)^2#
+    # Neural network#
+    nn_fit <- nnet(y ~ ., data = train, size = 20, decay = 0.1, #
+                   linout = TRUE, trace = FALSE)#
+    nn_yhat <- predict(nn_fit, newdata = test)#
+    nn_loss <- (test$y - nn_yhat)^2#
+    # Support vector machine#
+    svm_fit <- svm(y ~ ., data = train, kernel = 'radial', fitted = FALSE)#
+    svm_yhat <- predict(svm_fit, newdata = test)#
+    svm_loss <- (test$y - svm_yhat)^2#
+  } else if (type == 'classification') {#
+    loss_fn <- function(observed, expected, eps = 1e-7) {#
+      # Padding against extreme predictions#
+      expected[expected == 1] <- 1 - eps#
+      expected[expected == 0] <- 0 + eps#
+      # Calculate cross-entropy#
+      -(observed * log(expected) + (1 - observed) * log(1 - expected))#
+    }#
+    # Linear model#
+    lm_fit <- glm(y ~ ., family = binomial, data = train)#
+    lm_yhat <- predict(lm_fit, newdata = test, type = 'response')#
+    lm_loss <- loss_fn(test$y, lm_yhat)#
+    # Random forest#
+    rf_fit <- ranger(y ~ ., data = train, num.trees = 50, classification = TRUE)#
+    rf_yhat <- rowMeans(#
+      predict(rf_fit, data = test, predict.all = TRUE)$predictions#
+    )#
+    rf_loss <- loss_fn(test$y, rf_yhat)#
+    # Neural network#
+    nn_fit <- nnet(y ~ ., data = train, size = 20, decay = 0.1, trace = FALSE)#
+    nn_yhat <- predict(nn_fit, newdata = test)#
+    nn_loss <- loss_fn(test$y, nn_yhat)#
+    # Support vector machine#
+    svm_fit <- svm(y ~ ., data = train, kernel = 'radial', fitted = FALSE,#
+                   type = 'C-classification', probability = TRUE)#
+    svm_yhat <- attr(#
+      predict(svm_fit, newdata = test, probability = TRUE), 'probabilities'#
+    )[, 1]#
+    svm_los <- loss_fn(test$y, svm_yhat)#
+  }#
+  rm(lm_yhat, rf_yhat, nn_yhat, svm_yhat)#
+  # Generate knockoff and permutation matrices#
+  x_tilde_cpi <- create.second_order(x)#
+  x_tilde_mpi <- x#
+  for (j in seq_len(p)) {#
+    x_tilde_mpi[, j] <- x[sample.int(n), j]#
+  }#
+  # Testing function#
+  pi_fn <- function(pi, j) {#
+    if (pi == 'marginal') {#
+      dat0[, j] <- x_tilde_mpi[, j]#
+    } else if (pi == 'conditional') {#
+      dat0[, j] <- x_tilde_cpi[, j]#
+    }#
+    test0 <- dat0[-idx, ]#
+    if (type == 'regression') {#
+      lm_loss0 <- (test$y - predict(lm_fit, newdata = test0))^2#
+      rf_loss0 <- (test$y - predict(rf_fit, test0)$predictions)^2#
+      nn_loss0 <- (test$y - predict(nn_fit, newdata = test0))^2#
+      svm_loss0 <- (test$y - predict(svm_fit, newdata = test0))^2#
+    } else if (type == 'classification') {#
+      lm_yhat0 <- predict(lm_fit, newdata = test0, type = 'response')#
+      lm_loss0 <- loss_fn(test$y, lm_yhat0)#
+      rf_yhat0 <- rowMeans(#
+        predict(rf_fit, data = test0, predict.all = TRUE)$predictions#
+      )#
+      rf_loss0 <- loss_fn(test$y, rf_yhat0)#
+      nn_yhat0 <- predict(nn_fit, newdata = test0)#
+      nn_loss0 <- loss_fn(test$y, nn_yhat0)#
+      svm_yhat0 <- attr(#
+        predict(svm_fit, newdata = test0, probability = TRUE), 'probabilities'#
+      )[, 1]#
+      svm_loss0 <- loss_fn(test$y, svm_yhat0)#
+      rm(lm_yhat0, rf_yhat0, nn_yhat0, svm_yhat0)#
+    }#
+    delta <- data.table(#
+        'LM' = lm_loss0 - lm_loss, #
+        'RF' = rf_loss0 - rf_loss,#
+        'NN' = nn_loss0 - nn_loss, #
+       'SVM' = svm_loss0 - svm_loss#
+    )#
+    t.test_lm <- t.test(delta$LM, alternative = 'greater')#
+    t.test_rf <- t.test(delta$RF, alternative = 'greater')#
+    t.test_nn <- t.test(delta$NN, alternative = 'greater')#
+    t.test_svm <- t.test(delta$SVM, alternative = 'greater')#
+    out <- data.table(#
+      'Model' = c('LM', 'RF', 'NN', 'SVM'),#
+       'Beta' = beta[j],#
+       'Test' = pi,#
+         'PI' = c(mean(delta$LM), mean(delta$RF), #
+                  mean(delta$NN), mean(delta$SVM)),#
+         'SE' = c(sd(delta$LM) / sqrt(n/3), sd(delta$RF) / sqrt(n/3), #
+                  sd(delta$NN) / sqrt(n/3), sd(delta$SVM) / sqrt(n/3)),#
+          't' = c(t.test_lm$statistic, t.test_rf$statistic, #
+                  t.test_nn$statistic, t.test_svm$statistic),#
+    'p.value' = c(t.test_lm$p.value, t.test_rf$p.value, #
+                  t.test_nn$p.value, t.test_svm$p.value))#
+    return(out)#
+  }#
+  out <- foreach(j = seq_len(p), .combine = rbind) %:% #
+    foreach(pi = c('marginal', 'conditional'), .combine = rbind) %do% #
+    pi_fn(pi, j)#
+  out[, Simulation := sim#
+    ][, Type := type#
+    ][, rho := rho]#
+  return(out)#
+}#
+#
+# Execute in parallel#
+out <- foreach(b = seq_len(1000), .combine = rbind) %:%#
+  foreach(sim = c('linear', 'nonlinear'), .combine = rbind) %:%#
+  foreach(type = c('regression', 'classification'), .combine = rbind) %:% #
+  foreach(rho = c(0, 0.5), .combine = rbind) %dopar%#
+  loop(b, sim, type, rho)
+a <- loop(1, sim = 'linear', type = 'regression', rho = 0)
+a
+a <- loop(1, sim = 'linear', type = 'classification', rho = 0)
+# Load libraries, register cores#
+library(data.table)#
+library(knockoff)#
+library(ranger)#
+library(nnet)#
+library(e1071)#
+library(tidyverse)#
+library(doMC)#
+registerDoMC(8)#
+#
+# Set seed#
+set.seed(123, kind = "L'Ecuyer-CMRG")#
+#
+# Hyperparameters#
+n <- 1500#
+p <- 10#
+beta <- c(0, 0, -0.5, 0.5, -1, 1, -1.5, 1.5, -2, 2)#
+#
+# Loop function#
+loop <- function(b, sim, type, rho) {#
+  # Simulate data#
+  beta <- beta[sample.int(p)]#
+  Sigma <- toeplitz(rho^(0:(p - 1)))#
+  x <- matrix(rnorm(n * p), ncol = p) %*% chol(Sigma)#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  if (sim == 'linear') {#
+    y <- x %*% beta + rnorm(n)#
+  } else if (sim == 'nonlinear') {#
+    idx <- x < -qnorm(0.75) | x > qnorm(0.75)#
+    xx <- matrix(0, nrow = n, ncol = p)#
+    xx[idx] <- 0#
+    xx[!idx] <- 1#
+    y <- xx %*% beta + rnorm(n)#
+  }#
+  if (type == 'classification') {#
+    y <- if_else(y > 0, 1, 0)#
+  }#
+  dat <- dat0 <- data.frame(x, y)#
+  # Split into training and test sets#
+  idx <- seq_len(n * 2/3)#
+  train <- dat[idx, ]#
+  test <- dat[-idx, ]#
+  # Fit models, compute loss#
+  if (type == 'regression') {#
+    # Linear model#
+    lm_fit <- lm(y ~ ., data = train)#
+    lm_yhat <- predict(lm_fit, newdata = test)#
+    lm_loss <- (test$y - lm_yhat)^2#
+    # Random forest#
+    rf_fit <- ranger(y ~ ., data = train, num.trees = 50)#
+    rf_yhat <- predict(rf_fit, data = test)$predictions#
+    rf_loss <- (test$y - rf_yhat)^2#
+    # Neural network#
+    nn_fit <- nnet(y ~ ., data = train, size = 20, decay = 0.1, #
+                   linout = TRUE, trace = FALSE)#
+    nn_yhat <- predict(nn_fit, newdata = test)#
+    nn_loss <- (test$y - nn_yhat)^2#
+    # Support vector machine#
+    svm_fit <- svm(y ~ ., data = train, kernel = 'radial', fitted = FALSE)#
+    svm_yhat <- predict(svm_fit, newdata = test)#
+    svm_loss <- (test$y - svm_yhat)^2#
+  } else if (type == 'classification') {#
+    loss_fn <- function(observed, expected, eps = 1e-7) {#
+      # Padding against extreme predictions#
+      expected[expected == 1] <- 1 - eps#
+      expected[expected == 0] <- 0 + eps#
+      # Calculate cross-entropy#
+      -(observed * log(expected) + (1 - observed) * log(1 - expected))#
+    }#
+    # Linear model#
+    lm_fit <- glm(y ~ ., family = binomial, data = train)#
+    lm_yhat <- predict(lm_fit, newdata = test, type = 'response')#
+    lm_loss <- loss_fn(test$y, lm_yhat)#
+    # Random forest#
+    rf_fit <- ranger(y ~ ., data = train, num.trees = 50, classification = TRUE)#
+    rf_yhat <- rowMeans(#
+      predict(rf_fit, data = test, predict.all = TRUE)$predictions#
+    )#
+    rf_loss <- loss_fn(test$y, rf_yhat)#
+    # Neural network#
+    nn_fit <- nnet(y ~ ., data = train, size = 20, decay = 0.1, trace = FALSE)#
+    nn_yhat <- predict(nn_fit, newdata = test)#
+    nn_loss <- loss_fn(test$y, nn_yhat)#
+    # Support vector machine#
+    svm_fit <- svm(y ~ ., data = train, kernel = 'radial', fitted = FALSE,#
+                   type = 'C-classification', probability = TRUE)#
+    svm_yhat <- attr(#
+      predict(svm_fit, newdata = test, probability = TRUE), 'probabilities'#
+    )[, 1]#
+    svm_loss <- loss_fn(test$y, svm_yhat)#
+  }#
+  rm(lm_yhat, rf_yhat, nn_yhat, svm_yhat)#
+  # Generate knockoff and permutation matrices#
+  x_tilde_cpi <- create.second_order(x)#
+  x_tilde_mpi <- x#
+  for (j in seq_len(p)) {#
+    x_tilde_mpi[, j] <- x[sample.int(n), j]#
+  }#
+  # Testing function#
+  pi_fn <- function(pi, j) {#
+    if (pi == 'marginal') {#
+      dat0[, j] <- x_tilde_mpi[, j]#
+    } else if (pi == 'conditional') {#
+      dat0[, j] <- x_tilde_cpi[, j]#
+    }#
+    test0 <- dat0[-idx, ]#
+    if (type == 'regression') {#
+      lm_loss0 <- (test$y - predict(lm_fit, newdata = test0))^2#
+      rf_loss0 <- (test$y - predict(rf_fit, test0)$predictions)^2#
+      nn_loss0 <- (test$y - predict(nn_fit, newdata = test0))^2#
+      svm_loss0 <- (test$y - predict(svm_fit, newdata = test0))^2#
+    } else if (type == 'classification') {#
+      lm_yhat0 <- predict(lm_fit, newdata = test0, type = 'response')#
+      lm_loss0 <- loss_fn(test$y, lm_yhat0)#
+      rf_yhat0 <- rowMeans(#
+        predict(rf_fit, data = test0, predict.all = TRUE)$predictions#
+      )#
+      rf_loss0 <- loss_fn(test$y, rf_yhat0)#
+      nn_yhat0 <- predict(nn_fit, newdata = test0)#
+      nn_loss0 <- loss_fn(test$y, nn_yhat0)#
+      svm_yhat0 <- attr(#
+        predict(svm_fit, newdata = test0, probability = TRUE), 'probabilities'#
+      )[, 1]#
+      svm_loss0 <- loss_fn(test$y, svm_yhat0)#
+      rm(lm_yhat0, rf_yhat0, nn_yhat0, svm_yhat0)#
+    }#
+    delta <- data.table(#
+        'LM' = lm_loss0 - lm_loss, #
+        'RF' = rf_loss0 - rf_loss,#
+        'NN' = nn_loss0 - nn_loss, #
+       'SVM' = svm_loss0 - svm_loss#
+    )#
+    t.test_lm <- t.test(delta$LM, alternative = 'greater')#
+    t.test_rf <- t.test(delta$RF, alternative = 'greater')#
+    t.test_nn <- t.test(delta$NN, alternative = 'greater')#
+    t.test_svm <- t.test(delta$SVM, alternative = 'greater')#
+    out <- data.table(#
+      'Model' = c('LM', 'RF', 'NN', 'SVM'),#
+       'Beta' = beta[j],#
+       'Test' = pi,#
+         'PI' = c(mean(delta$LM), mean(delta$RF), #
+                  mean(delta$NN), mean(delta$SVM)),#
+         'SE' = c(sd(delta$LM) / sqrt(n/3), sd(delta$RF) / sqrt(n/3), #
+                  sd(delta$NN) / sqrt(n/3), sd(delta$SVM) / sqrt(n/3)),#
+          't' = c(t.test_lm$statistic, t.test_rf$statistic, #
+                  t.test_nn$statistic, t.test_svm$statistic),#
+    'p.value' = c(t.test_lm$p.value, t.test_rf$p.value, #
+                  t.test_nn$p.value, t.test_svm$p.value))#
+    return(out)#
+  }#
+  out <- foreach(j = seq_len(p), .combine = rbind) %:% #
+    foreach(pi = c('marginal', 'conditional'), .combine = rbind) %do% #
+    pi_fn(pi, j)#
+  out[, Simulation := sim#
+    ][, Type := type#
+    ][, rho := rho]#
+  return(out)#
+}#
+#
+# Execute in parallel#
+out <- foreach(b = seq_len(1000), .combine = rbind) %:%#
+  foreach(sim = c('linear', 'nonlinear'), .combine = rbind) %:%#
+  foreach(type = c('regression', 'classification'), .combine = rbind) %:% #
+  foreach(rho = c(0, 0.5), .combine = rbind) %dopar%#
+  loop(b, sim, type, rho)
+head(out)
+# Empirical error rates#
+out[, Rejected := p.value <= 0.05]#
+df <- out[, .(RejRate = mean(Rejected)), #
+          by = .(Simulation, Type, Model, Test, Beta, rho)]#
+df[, Model := factor(Model)]#
+#
+# Type I and Type II Errors#
+plot_fn <- function(type, rho) {#
+  df %>% #
+    filter(Type == type, rho == rho) %>%#
+    ggplot(aes(Beta, RejRate, group = Test, color = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate',#
+         title = paste(type, rho, sep = ',')) + #
+    theme_bw() + #
+    scale_color_d3() +#
+    facet_grid(Simulation ~ Model)#
+}
+head(df)
+dim(df)
+dim(out)
+plot_fn('regression', 0)
+library(ggsci)
+plot_fn('regression', 0)
+# Empirical error rates#
+out[, Rejected := p.value <= 0.05#
+  ][, EffSize := abs(Beta)]#
+df <- out[, .(RejRate = mean(Rejected)), #
+          by = .(Simulation, Type, Model, Test, EffSize, rho)]#
+df[, Model := factor(Model)]#
+#
+# Type I and Type II Errors#
+plot_fn <- function(type, rho) {#
+  df %>% #
+    filter(Type == type, rho == rho) %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate',#
+         title = paste(type, rho, sep = ',')) + #
+    theme_bw() + #
+    scale_color_d3() +#
+    facet_grid(Simulation ~ Model)#
+}
+head(df)
+plot_fn('regression', 0)
+df %>% filter(Type == 'regression', rho == 0, Test == 'conditional') %>% head(.)
+a %>% filter(Type == 'regression', rho == 0, Test == 'conditional')
+a %>% filter(df, Type == 'regression', rho == 0, Test == 'conditional')
+a <- filter(df, Type == 'regression', rho == 0, Test == 'conditional')
+table(a$EffSize)
+plot_fn('regression', 0)
+df %>% filter(Simulation == 'linear', Model == 'NN', Type == 'regression', rho == 0, Test == 'conditional') %>% ggplot(aes(EffSize, RejRate)) + geom_point() + geom_line() + theme_bw()
+df %>% filter(Simulation == 'linear', Model == 'NN', Type == 'regression', rho == 0, Test == 'conditional')
+plot_fn('regression', 0)
+df %>% filter(Simulation == 'linear', Model == 'NN', Type == 'regression', rho == 0, Test == 'marginal')
+df %>% filter(Simulation == 'linear', Model == 'NN', Type == 'regression', rho == 0, Test == 'marginal') %>% ggplot(aes(EffSize, RejRate)) + geom_point() + geom_line() + theme_bw()
+plot_fn('regression', 0)
+plot_fn <- function(type, rho) {#
+  df %>% #
+    filter(Type == type, rho == rho) %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate',#
+         title = paste(type, rho, sep = ',')) + #
+    theme_bw() + #
+    scale_color_d3() +#
+    facet_grid(Simulation ~ Model)#
+}
+plot_fn('regression', 0)
+df %>% filter(Simulation == 'nonlinear', Model == 'LM', Type == 'regression', rho == 0) %>% ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) + geom_point() + geom_line() + theme_bw() + geom_hline(yintercept = 0.05, linetype = 'dashed')
+df %>% filter(Simulation == 'nonlinear', Model == 'LM', Type == 'regression', rho == 0)
+plot_fn('regression', 0)
+colnames(df)
+plot_fn('regression', 0)
+df %>% filter(Simulation == 'nonlinear', Model == 'NN', Type == 'regression', rho == 0)
+plot_fn('regression', 0)
+df %>% filter(Simulation == 'nonlinear', Model == 'NN', Type == 'regression', rho == 0) %>% ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) + geom_point() + geom_line() + geom_hline(yintercept = 0.05, linetype = 'dashed') + theme_bw()
+plot_fn('classification', 0)
+plot_t <- function(test, type, rho) {#
+  out %>% #
+    filter(Beta == 0, Test == test, Type == type, rho == rho) %>%#
+    ggplot(aes(t)) + #
+    geom_histogram(aes(y = ..density..), bins = 50, color = 'black') + #
+    stat_function(fun = dt, args = list(df = 499), color = 'red') + #
+    labs(y = 'Density', title = paste(test, type, rho)) + #
+    theme_bw() + #
+    facet_grid(Simulation ~ Model)#
+}
+plot_t('marginal', 'regression', 0)
+df %>% #
+    filter(Type == 'regression', rho == 0, Simulation == 'nonlinear', Model == 'NN') %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate') + #
+    theme_bw() + #
+    scale_color_d3()
+df %>% #
+    filter(Type == 'regression', rho == 0) %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate') + #
+    theme_bw() + #
+    scale_color_d3() + face_grid(Simulation ~ Model)
+df %>% #
+    filter(Type == 'regression', rho == 0) %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate') + #
+    theme_bw() + #
+    scale_color_d3() + facet_grid(Simulation ~ Model)
+plot_fn <- function(type, rho) {#
+  df %>% #
+    filter(Type == type, rho == rho) %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate') + #
+    theme_bw() + #
+    scale_color_d3() +#
+    facet_grid(Simulation ~ Model)#
+}
+plot_fn('regression', 0)
+plot_fn <- function(type, corr) {#
+  df %>% #
+    filter(Type == type, rho == corr) %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate',#
+         title = paste(type, rho, sep = ',')) + #
+    theme_bw() + #
+    scale_color_d3() +#
+    facet_grid(Simulation ~ Model)#
+}
+plot_fn('regression', 0)
+plot_fn <- function(type, corr) {#
+  df %>% #
+    filter(Type == type, rho == corr) %>%#
+    ggplot(aes(EffSize, RejRate, group = Test, color = Test, shape = Test)) +#
+    geom_point() + #
+    geom_line() + #
+    geom_hline(yintercept = 0.05, linetype = 'dashed') +#
+    scale_y_continuous(breaks = c(0, .05, .25, .5, .75, 1), limits = c(0, 1)) + #
+    labs(x = 'Effect Size', y = 'Rejection Rate',#
+         title = paste(type, corr, sep = ',')) + #
+    theme_bw() + #
+    scale_color_d3() +#
+    facet_grid(Simulation ~ Model)#
+}
+plot_fn('regression', 0)
+plot_fn('regression', 0.5)
+plot_fn('classification', 0)
+plot_fn('classification', 0.5)
+plot_t <- function(test, type, rho) {#
+  out %>% #
+    filter(Beta == 0, Test == test, Type == type, rho == rho) %>%#
+    ggplot(aes(t)) + #
+    geom_histogram(aes(y = ..density..), bins = 50, color = 'black') + #
+    stat_function(fun = dt, args = list(df = 499), color = 'red') + #
+    labs(y = 'Density', title = paste(test, type, rho)) + #
+    theme_bw() + #
+    facet_grid(Simulation ~ Model)#
+}
+plot_t('conditional', 'regression', 0)
+plot_t('conditional', 'regression', 0.5)
+plot_t('conditional', 'classification', 0)
+plot_t('conditional', 'classification', 0.5)
+plot_t('marginal', 'regression', 0)
+plot_t('marginal', 'regression', 0.5)
+plot_t('marginal', 'classification', 0)
+plot_t('marginal', 'classification', 0.5)
+head(df)
+df[EffSize == 0 & Test == conditional]
+df[EffSize == 0 & Test == 'conditional']
+df[EffSize == 0 & Test == 'marginal']
+df[EffSize == 0 & Test == 'marginal' & rho == 0]
+plot_t('marginal', 'regression', rho = 0)
+colnames(out)
+head(out)
+1150 - 833
+317 * 6
+library(knockoff)
+?create.gaussian
+?fdp
+?rnorm
+n <- 20
+p <- 10
+rho <- 0
+amplitude = 1
+Sigma <- toeplitz(rho^(0:(p - 1)))#
+  x <- matrix(rnorm(n * p), ncol = p) %*% chol(Sigma)#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  # Simulate signal#
+  k <- 60#
+  nonzero <- sample(p, k)#
+  beta <- amplitude * (1:p %in% nonzero) / sqrt(n)
+k <- 3
+nonzero <- sample(p, k)
+nonzero
+beta <- amplitude * (1:p %in% nonzero) / sqrt(n)
+beta
+sign()
+sign(4)
+sign(-1)
+beta <- beta * sample(c(1, -1), size = p, replace = T)
+beta
+sample(c(1, -1), size = p)
+sample(c(1, -1), replace = T, size = p)
+a <- sample(c(1, -1), replace = T, size = p)
+a
+beta * a
+signs <- sample(c(1, -1), replace = TRUE)#
+  beta <- amplitude * (1:p %in% nonzero) / sqrt(n) * signs
+beta
+toeplitz(0^(0:5))
+?create.solve_asdp
+library(corpcor)
+?cov.shrink
+dim(x)
+x
+Sigma <- cov.shrink(x, verbose = F)
+Sigma
+Sigma <- matrix(cov.shrink(x, verbose = F))
+Sigma
+Sigma <- matrix(cov.shrink(x, verbose = F), nrow = nrow(x))
+Sigma
+Sigma <- matrix(cov.shrink(x, verbose = F), nrow = ncol(x))
+Sigma
+dim(x)
+?create.solve_asdp
+?stat.glmnet_lambdasmax
+?stat.glmnet_lambdasdiff
+?stat.glmnet_lambdadiff
+?stat.lasso_coefdiff
+?knockoff.threshold
+n <- 100
+n <- 3000
+p <- 1000
+rho <- 0
+amplitude <- 5
+type <- 'regression'
+# Simulate predictors#
+  x <- matrix(rnorm(n * p), ncol = p)#
+  mu <- rep(0, p)#
+  Sigma <- toeplitz(rho^(0:(p - 1)))#
+  if (rho > 0) {#
+    x <- x %*% chol(Sigma)#
+  }#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  # Simulate signal#
+  k <- 60#
+  nonzero <- sample(p, k)#
+  signs <- sample(c(1, -1), size = p, replace = TRUE)#
+  beta <- amplitude * (1:p %in% nonzero) / sqrt(n) * signs#
+  signal <- x %*% beta#
+  # Simulate response#
+  if (type == 'regression') {#
+    y <- signal + rnorm(n)#
+  } else if (type == 'classification') {#
+    y <- as.factor(rbinom(n, size = 1, prob = plogis(signal)))#
+  }#
+  # Solve for S#
+  diag_s = create.solve_asdp(Sigma)
+x_tilde <- create.gaussian(x, mu, Sigma, diag_s = diag_s)#
+    if (type == 'regression') {#
+      w <- stat.glmnet_coefdiff(x, x_tilde, y, family = 'gaussian', cores = 1)#
+    } else if (type == 'classification') {#
+      w <- stat.glmnet_coefdiff(x, x_tilde, y, family = 'binomial', cores = 1)#
+    }#
+    t_stat <- knockoff.threshold(w, fdr = 0.1, offset = 0)
+t_stat
+which(w > tau)
+which(w > t_stat)
+sum(beta[selected] == 0) / max(1, length(selected))
+selected <- which(w > t_stat)
+sum(beta[selected] == 0) / max(1, length(selected))
+length(selected)
+which(beta > 0)
+which(beta != 0)
+selected
+not_selected <- seq_len(p)[!selected]
+head(not_selected)
+not_selected <- setdiff(seq_len(p), selected)
+head(not_selected)
+head(not_selected, 20)
+neg <- not_selected
+neg <- which(w <= t_stat)
+neg2 <- setdiff(seq_len(p), selected)
+identical(neg, neg2)
+head(beta[neg])
+pwr <- 1 - sum(beta[neg] != 0) / p
+pwr
+sum(beta[neg] != )
+sum(beta[neg] != 0)
+?glmnet
+?cv.glmnet
+remove.packages('knockoff')
+library(devtools)#
+install_bitbucket("msesia/knockoff-filter/R/knockoff")
+library(knockoff)
+?create.solve
+?create.solve_asdp
+library(glmnet)
+?glmnet
+stat.glmnet_coefdiff
+?stat.glmnet_coefdiff
+?glmnet
+?stat.glmnet_coefdiff
+?glmnet
+dim(x)
+dim(y)
+length(y)
+head(y)
+library(doMC)
+registerDoMC(8)
+?cv.glmnet
+fit <- cv.glmnet(x, y, family = 'binomial', nlambda = 500, parallel = TRUE)
+names(fit)
+f
+?predict.glmnet
+x2 <- x[1:100, ]
+head(predict(fit, newx = x2, s = 'lambda.min'))
+head(predict(fit, newx = x2, s = 'lambda.min', type = 'link'))
+head(predict(fit, newx = x2, s = 'lambda.min', type = 'response'))
+fit$cvm
+?cv.glmnet
+?predict.glmnet
+head(predict(fit))
+?cv.glmnet
+y <- as.factor(rbinom(10, 1, 0.5))
+y
+as.numeric(y)
+seq(0, 1, 0.1)
+library(knockoff)
+?create.gaussian
+library(microbenchmark)
+# Set working directory#
+setwd('~/Documents/CPI/cpi_paper/4.1_Simulated_Data')#
+#
+# Set seed#
+set.seed(123, kind = "L'Ecuyer-CMRG")#
+#
+# Load libraries, register cores#
+library(data.table)#
+library(knockoff)#
+library(glmnet)#
+library(doMC)#
+registerDoMC(8)
+n <- 3000
+p <- 1000
+rho <- 0
+amplitude <- 5
+x <- matrix(rnorm(n * p), ncol = p)#
+  if (rho == 0) {#
+    Sigma <- diag(p)#
+  } else {#
+    Sigma <- toeplitz(rho^(0:(p - 1)))#
+    x <- x %*% chol(Sigma)#
+  }#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  # Simulate signal#
+  k <- 60#
+  nonzero <- sample(p, k)#
+  signs <- sample(c(1, -1), size = p, replace = TRUE)#
+  beta <- amplitude * (seq_len(p) %in% nonzero) / sqrt(n) * signs#
+  signal <- x %*% beta#
+  # Gaussian MX knockoff parameters#
+  mu <- rep(0, p)#
+  diag_s = create.solve_asdp(Sigma)
+test <- function(b, type) {#
+    # Generate knockoffs#
+    x_tilde <- create.gaussian(x, mu, Sigma, diag_s = diag_s)#
+    ### Knockoff filter ####
+    if (type == 'regression') {#
+      y <- signal + rnorm(n)#
+      w <- stat.glmnet_coefdiff(x, x_tilde, y, family = 'gaussian', cores = 1)#
+    } else if (type == 'classification') {#
+      y <- as.factor(rbinom(n, size = 1, prob = plogis(signal)))#
+      w <- stat.glmnet_coefdiff(x, x_tilde, y, family = 'binomial', cores = 1)#
+    }#
+    tau <- knockoff.threshold(w, fdr = 0.1, offset = 0)#
+    pos <- which(w > tau)#
+    neg <- which(w <= tau)#
+    ko_fdr <- sum(beta[pos] == 0) / max(1, length(pos))#
+    ko_pwr <- 1 - sum(beta[neg] != 0) / p#
+    ### CPI ####
+    # Generate test dataset#
+    x_test <- matrix(rnorm(n * p), ncol = p)#
+    if (rho > 0) {#
+      x_test <- x_test %*% chol(Sigma)#
+    }#
+    dimnames(x_test) <- list(NULL, paste0('x', seq_len(p)))#
+    signal_test <- x_test %*% beta#
+    # Fit model, compute loss#
+    if (type == 'regression') {#
+      f <- cv.glmnet(x, y, family = 'gaussian', nlambda = 500, parallel = FALSE)#
+      y_test <- signal_test + rnorm(n)#
+      y_hat <- predict(f, newx = x_test, s = 'lambda.min')#
+      loss <- (y_test - y_hat)^2#
+    } else if (type == 'classification') {#
+      f <- cv.glmnet(x, y, family = 'binomial', nlambda = 500, parallel = FALSE)#
+      y_test <- rbinom(n, size = 1, prob = plogis(signal_test))#
+      y_hat <- predict(f, newx = x_test, s = 'lambda.min', type = 'response')#
+      loss <- -(y_test * log(y_hat) + (1 - y_test) * log(1 - y_hat))#
+    }#
+    p_values <- rep(1, p)#
+    cpi_fn <- function(j) {#
+      x_test[, j] <- x_tilde[, j]#
+      if (type == 'regression') {#
+        y_hat0 <- predict(f, newx = x_test, s = 'lambda.min')#
+        loss0 <- (y_test - y_hat0)^2#
+      } else if (type == 'classification') {#
+        y_hat0 <- predict(f, newx = x_test, s = 'lambda.min', type = 'response')#
+        loss0 <- -(y_test * log(y_hat0) + (1 - y_test) * log(1 - y_hat0))#
+      }#
+      delta <- loss0 - loss#
+      t_test <- t.test(delta, alternative = 'greater')#
+      return(t_test$p.value)#
+    }#
+    nonzero <- predict(f, s = 'lambda.min', type = 'nonzero')$X1#
+    p_values[nonzero] <- foreach(j = nonzero, .combine = c) %do% cpi_fn(j)#
+    q_values <- p.adjust(p_values, method = 'fdr')#
+    pos <- which(q_values <= 0.1)#
+    neg <- which(q_values > 0.1)#
+    cpi_fdr <- sum(beta[pos] == 0) / max(1, length(pos))#
+    cpi_pwr <- 1 - sum(beta[neg] != 0) / p#
+    out <- data.table(#
+         Run = b, #
+        type = type,#
+      method = c('Knockoff', 'CPI'), #
+         FDR = c(ko_fdr, cpi_fdr),#
+       Power = c(ko_pwr, cpi_pwr)#
+    )#
+    return(out)#
+  }
+a <- microbenchmark(test(1, 'regression'), times = 5)
+a
+a <- microbenchmark(test(1, 'classification'), times = 2)
+a
+(206 + 130) / 2
+3 * 400 / 8 / 60
+3 * 400  / 8 * 36 / 60
+3 * 400  / 20 * 36 / 60
+x_tilde <- create.gaussian(x, mu, Sigma, diag_s = diag_s)
+test_ko <- function(b, type) {#
+  ### Knockoff filter ####
+  if (type == 'regression') {#
+    y <- signal + rnorm(n)#
+    w <- stat.glmnet_coefdiff(x, x_tilde, y, family = 'gaussian', cores = 1)#
+  } else if (type == 'classification') {#
+    y <- as.factor(rbinom(n, size = 1, prob = plogis(signal)))#
+    w <- stat.glmnet_coefdiff(x, x_tilde, y, family = 'binomial', cores = 1)#
+  }#
+  tau <- knockoff.threshold(w, fdr = 0.1, offset = 0)#
+  pos <- which(w > tau)#
+  neg <- which(w <= tau)#
+  ko_fdr <- sum(beta[pos] == 0) / max(1, length(pos))#
+  ko_pwr <- 1 - sum(beta[neg] != 0) / p#
+  out <- data.table(#
+    Run = b, #
+    type = type, #
+    FDR = ko_fdr,#
+    Power = ko_pwr#
+  )#
+  return(out)#
+}#
+#
+test_cpi <- function(b, type) {#
+  ### CPI ####
+  # Generate test dataset#
+  x_test <- matrix(rnorm(n * p), ncol = p)#
+  if (rho > 0) {#
+    x_test <- x_test %*% chol(Sigma)#
+  }#
+  dimnames(x_test) <- list(NULL, paste0('x', seq_len(p)))#
+  signal_test <- x_test %*% beta#
+  # Fit model, compute loss#
+  if (type == 'regression') {#
+    f <- cv.glmnet(x, y, family = 'gaussian', nlambda = 500, parallel = FALSE)#
+    y_test <- signal_test + rnorm(n)#
+    y_hat <- predict(f, newx = x_test, s = 'lambda.min')#
+    loss <- (y_test - y_hat)^2#
+  } else if (type == 'classification') {#
+    f <- cv.glmnet(x, y, family = 'binomial', nlambda = 500, parallel = FALSE)#
+    y_test <- rbinom(n, size = 1, prob = plogis(signal_test))#
+    y_hat <- predict(f, newx = x_test, s = 'lambda.min', type = 'response')#
+    loss <- -(y_test * log(y_hat) + (1 - y_test) * log(1 - y_hat))#
+  }#
+  p_values <- rep(1, p)#
+  cpi_fn <- function(j) {#
+    x_test[, j] <- x_tilde[, j]#
+    if (type == 'regression') {#
+      y_hat0 <- predict(f, newx = x_test, s = 'lambda.min')#
+      loss0 <- (y_test - y_hat0)^2#
+    } else if (type == 'classification') {#
+      y_hat0 <- predict(f, newx = x_test, s = 'lambda.min', type = 'response')#
+      loss0 <- -(y_test * log(y_hat0) + (1 - y_test) * log(1 - y_hat0))#
+    }#
+    delta <- loss0 - loss#
+    t_test <- t.test(delta, alternative = 'greater')#
+    return(t_test$p.value)#
+  }#
+  nonzero <- predict(f, s = 'lambda.min', type = 'nonzero')$X1#
+  p_values[nonzero] <- foreach(j = nonzero, .combine = c) %do% cpi_fn(j)#
+  q_values <- p.adjust(p_values, method = 'fdr')#
+  pos <- which(q_values <= 0.1)#
+  neg <- which(q_values > 0.1)#
+  cpi_fdr <- sum(beta[pos] == 0) / max(1, length(pos))#
+  cpi_pwr <- 1 - sum(beta[neg] != 0) / p#
+  out <- data.table(#
+    Run = b, #
+    type = type, #
+    FDR = cpi_fdr,#
+    Power = cpi_pwr#
+  )#
+  return(out)#
+}
+a <- microbenchmark(ko_reg = test_ko(1, 'regression'), cpi_reg = test_cpi(1, 'regression'), ko_class = test_ko(1, 'classification'), cpi_class = test_cpi(1, 'classification'), times = 2)
+dim(x)
+dim(x_tilde)
+dim(y)
+length(y)
+n
+class(signal)
+dim(signal)
+test_cpi <- function(b, type) {#
+  ### CPI ####
+  # Generate test dataset#
+  x_test <- matrix(rnorm(n * p), ncol = p)#
+  if (rho > 0) {#
+    x_test <- x_test %*% chol(Sigma)#
+  }#
+  dimnames(x_test) <- list(NULL, paste0('x', seq_len(p)))#
+  signal_test <- x_test %*% beta#
+  # Fit model, compute loss#
+  if (type == 'regression') {#
+    y <- signal + rnorm(n)#
+    f <- cv.glmnet(x, y, family = 'gaussian', nlambda = 500, parallel = FALSE)#
+    y_test <- signal_test + rnorm(n)#
+    y_hat <- predict(f, newx = x_test, s = 'lambda.min')#
+    loss <- (y_test - y_hat)^2#
+  } else if (type == 'classification') {#
+    y <- as.factor(rbinom(n, size = 1, prob = plogis(signal)))#
+    f <- cv.glmnet(x, y, family = 'binomial', nlambda = 500, parallel = FALSE)#
+    y_test <- rbinom(n, size = 1, prob = plogis(signal_test))#
+    y_hat <- predict(f, newx = x_test, s = 'lambda.min', type = 'response')#
+    loss <- -(y_test * log(y_hat) + (1 - y_test) * log(1 - y_hat))#
+  }#
+  p_values <- rep(1, p)#
+  cpi_fn <- function(j) {#
+    x_test[, j] <- x_tilde[, j]#
+    if (type == 'regression') {#
+      y_hat0 <- predict(f, newx = x_test, s = 'lambda.min')#
+      loss0 <- (y_test - y_hat0)^2#
+    } else if (type == 'classification') {#
+      y_hat0 <- predict(f, newx = x_test, s = 'lambda.min', type = 'response')#
+      loss0 <- -(y_test * log(y_hat0) + (1 - y_test) * log(1 - y_hat0))#
+    }#
+    delta <- loss0 - loss#
+    t_test <- t.test(delta, alternative = 'greater')#
+    return(t_test$p.value)#
+  }#
+  nonzero <- predict(f, s = 'lambda.min', type = 'nonzero')$X1#
+  p_values[nonzero] <- foreach(j = nonzero, .combine = c) %do% cpi_fn(j)#
+  q_values <- p.adjust(p_values, method = 'fdr')#
+  pos <- which(q_values <= 0.1)#
+  neg <- which(q_values > 0.1)#
+  cpi_fdr <- sum(beta[pos] == 0) / max(1, length(pos))#
+  cpi_pwr <- 1 - sum(beta[neg] != 0) / p#
+  out <- data.table(#
+    Run = b, #
+    type = type, #
+    FDR = cpi_fdr,#
+    Power = cpi_pwr#
+  )#
+  return(out)#
+}
+a <- microbenchmark(ko_reg = test_ko(1, 'regression'), cpi_reg = test_cpi(1, 'regression'), ko_class = test_ko(1, 'classification'), cpi_class = test_cpi(1, 'classification'), times = 2)
+a
+95/39
+126/86

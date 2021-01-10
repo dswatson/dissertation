@@ -1,0 +1,676 @@
+tail(df)
+res %>% filter(Method == 'CPI' & n == 300 & p == 1000 & type == 'regression' & rho == 0) %>% dim(.)
+dim(res)
+df <- readRDS('~/Dropbox/cpi_paper_results/4.1.1_Type_I_and_Type_II_Errors/sim_regr_toeplitz.Rds')
+library(knockoff)
+?stat.glmnet_coefdiff
+library(glmnet)
+citation('glmnet')
+citation('knockoff')
+p <- runif(1000)
+lambda <- seq(0.05, 0.95, 0.05)
+pi0 <- function(p, lambda) {
+sum(p > lambda) / (length(p) * (1 - lambda))
+}
+pi0(p, 0.05)
+df <- data.frame(lambda = lambda)
+df$pi0 <- pi0(p, df$lambda)
+library(tidyverse)
+df$pi0 <- sapply(df$lambda, function(x) pi0(p, x))
+head(df)
+sum(p > 0.05)
+length(p)
+length(p) * 0.95
+plot(lambda, pi0, data = df)
+colnames(df) <- c('x', 'y')
+plot(x, y, data = df)
+tail(df)
+head(df)
+ggplot(df, aes(x, y)) + geom_point()
+colnames(df) <- c('lambda', 'pi0')
+p <- runif(1e5)
+lambda <- seq(0.001, 0.999, 0.001)
+df <- data.frame(lambda = lambda)
+df$pi0 <- sapply(df$lambda, function(x) pi0(p, lambda))
+head(warnings)
+warnings
+warnings()
+df <- tibble(lambda = lambda)
+dim9df
+dim(df)
+df <- df %>% rowwise() %>% mutate(pi0 = pi0(p, lambda))
+head(df)
+tail(df)
+ggplot(df, aes(lambda, pi0)) + geom_point()
+df <- df %>% mutate(pi0_2 = sum(p > lambda) / length(p))
+head(df)
+tail(df)
+ggplot(df, aes(pi0, pi0_2)) + geom_point(size = 0.25) + theme_bw()
+ggplot(df, aes(lambda, pi0_2)) + geom_point(size = 0.25) + theme_bw()
+smooth.spline
+?smooth.spline
+library(bioplotr)
+devtools::install_github('dswatson/bioplotr')
+library(bioplotr)
+update.packages()
+library(BiocManager)
+BiocManager()
+install()
+library(bioplotr)
+devtools::install_github('dswatson/bioplotr')
+library(bioplotr)
+?plot_pca
+?plot_drivers
+beta <- rep(seq(0, .9, length.out = 10), each = p/10)
+beta
+?dnorm
+x <- rnorm(100)
+dnorm(x, log = T)
+dnorm(x)
+sum(dnorm(x, log = T))
+?sample
+sim <- function(n, p, rho, k, amplitude) {#
+  # Simulate x#
+  x <- matrix(rnorm(n * p), ncol = p)#
+  Sigma <- toeplitz(rho ^ (0:(p - 1)))#
+  x <- x %*% chol(Sigma)#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  # Simulate y#
+  nonzero <- sample(p, k)#
+  signs <- sample(c(1, -1), size = p, replace = TRUE)#
+  beta <- amplitude * (seq_len(p) %in% nonzero) / sqrt(n) * signs#
+  signal <- x %*% beta #
+  y <- signal + rnorm(n)#
+  # Export#
+  out <- data.frame(x, y)#
+  return(out)#
+}
+df <- sim(n = 1000, p = 100, rho = 0.1, k = 50, amplitude = 10)
+head(df)
+train <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+test <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+#
+# Train null and alternative models#
+f <- lm(y ~ ., data = train)#
+f0 <- lm(y ~ ., data = train[, -1])#
+#
+# Compute likelihoods#
+y_hat <- predict(f, test)#
+rmse <- sqrt(mean((y_hat - test$y)^2))#
+y_hat0 <- predict(f0, test)#
+rmse0 <- sqrt(mean((y_hat0 - test$y)^2))#
+f_lik <- dnorm(test$y, mean = y_hat, sd = rmse, log = TRUE)#
+f0_lik <- dnorm(test$y, mean = y_hat0, sd = rmse0, log = TRUE)
+head(f_lik)
+df <- data.frame(f_lik, f0_lik)
+dim(df)
+library(tidyverse)
+ggplot(df, aes(f_lik, f0_lik)) + geom_point() + theme_bw()
+?set.seed
+# Load libraries, register cores#
+library(tidyverse)#
+library(doMC)#
+registerDoMC(8)#
+#
+# Set seed#
+set.seed(123, kind = "L'Ecuyer-CMRG")#
+#
+# Simulate data#
+sim <- function(n, p, rho, k, amplitude) {#
+  # Simulate x#
+  x <- matrix(rnorm(n * p), ncol = p)#
+  Sigma <- toeplitz(rho ^ (0:(p - 1)))#
+  x <- x %*% chol(Sigma)#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  # Simulate y#
+  nonzero <- sample(p, k)#
+  signs <- sample(c(1, -1), size = p, replace = TRUE)#
+  beta <- amplitude * (seq_len(p) %in% nonzero) / sqrt(n) * signs#
+  signal <- x %*% beta #
+  y <- signal + rnorm(n)#
+  # Export#
+  out <- data.frame(x, y)#
+  return(out)#
+}#
+#
+# Create training and test datasets#
+train <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+test <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+#
+# Train null and alternative models#
+f <- lm(y ~ ., data = train)#
+f0 <- lm(y ~ ., data = train[, -1])#
+#
+# Compute likelihoods#
+y_hat <- predict(f, test)#
+rmse <- sqrt(mean((y_hat - test$y)^2))#
+y_hat0 <- predict(f0, test)#
+rmse0 <- sqrt(mean((y_hat0 - test$y)^2))#
+f_lik <- dnorm(test$y, mean = y_hat, sd = rmse, log = TRUE)#
+f0_lik <- dnorm(test$y, mean = y_hat0, sd = rmse0, log = TRUE)#
+#
+# Compute lambda#
+lambda <- f_lik - f0_lik#
+#
+# Simulate null distribution#
+eps <- y_hat - test$y#
+null_sim <- function(b) {#
+  n <- length(test$y)#
+  # y_b <- y_hat0 + sample(eps, size = n, replace = TRUE)#
+  y_b <- rnorm(n, mean = y_hat0, sd = rmse)#
+  f0_lik <- dnorm(y_b, mean = y_hat0, sd = rmse0, log = TRUE)#
+  lambda0 <- f_lik - f0_lik#
+  return(lambda0)#
+}#
+lambda0 <- foreach(b = seq_len(1e4), .combine = c) %dopar% null_sim(b)
+head(lambda0)
+hist(lambda0, breaks = 100)
+lambda
+# Set seed#
+set.seed(123, kind = "L'Ecuyer-CMRG")#
+#
+# Simulate data#
+sim <- function(n, p, rho, k, amplitude) {#
+  # Simulate x#
+  x <- matrix(rnorm(n * p), ncol = p)#
+  Sigma <- toeplitz(rho ^ (0:(p - 1)))#
+  x <- x %*% chol(Sigma)#
+  dimnames(x) <- list(NULL, paste0('x', seq_len(p)))#
+  # Simulate y#
+  nonzero <- sample(p, k)#
+  signs <- sample(c(1, -1), size = p, replace = TRUE)#
+  beta <- amplitude * (seq_len(p) %in% nonzero) / sqrt(n) * signs#
+  signal <- x %*% beta #
+  y <- signal + rnorm(n)#
+  # Export#
+  out <- data.frame(x, y)#
+  return(out)#
+}#
+#
+# Create training and test datasets#
+train <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+test <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+#
+# Train null and alternative models#
+f <- lm(y ~ ., data = train)#
+f0 <- lm(y ~ ., data = train[, -1])#
+#
+# Compute likelihoods#
+y_hat <- predict(f, test)#
+rmse <- sqrt(mean((y_hat - test$y)^2))#
+y_hat0 <- predict(f0, test)#
+rmse0 <- sqrt(mean((y_hat0 - test$y)^2))#
+f_lik <- sum(dnorm(test$y, mean = y_hat, sd = rmse, log = TRUE))#
+f0_lik <- sum(dnorm(test$y, mean = y_hat0, sd = rmse0, log = TRUE))#
+#
+# Compute lambda#
+lambda <- f_lik - f0_lik#
+#
+# Simulate null distribution#
+eps <- y_hat - test$y#
+null_sim <- function(b) {#
+  n <- length(test$y)#
+  # y_b <- y_hat0 + sample(eps, size = n, replace = TRUE)#
+  y_b <- rnorm(n, mean = y_hat0, sd = rmse)#
+  f0_lik <- sum(dnorm(y_b, mean = y_hat0, sd = rmse0, log = TRUE))#
+  lambda0 <- f_lik - f0_lik#
+  return(lambda0)#
+}#
+lambda0 <- foreach(b = seq_len(1e4), .combine = c) %dopar% null_sim(b)
+hist(lambda0, breaks = 100)
+mean(lambda0)
+?quantile
+a <- ecdf(lambda0)
+a[lambda]
+lambda
+a(lambda)
+?ecdf
+sum(lambda0 >= lambda) / length(lambda0)
+sum(lambda >= lambda0) / length(lambda0)
+(sum(lambda >= lambda0) + 1) / (length(lambda0) + 1)
+# Create training and test datasets#
+train <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+test <- sim(n = 100, p = 10, rho = 0, k = 0, amplitude = 0)#
+#
+# Train null and alternative models#
+f <- lm(y ~ ., data = train)#
+f0 <- lm(y ~ ., data = train[, -1])#
+#
+# Compute likelihoods#
+y_hat <- predict(f, test)#
+rmse <- sqrt(mean((y_hat - test$y)^2))#
+y_hat0 <- predict(f0, test)#
+rmse0 <- sqrt(mean((y_hat0 - test$y)^2))#
+f_lik <- sum(dnorm(test$y, mean = y_hat, sd = rmse, log = TRUE))#
+f0_lik <- sum(dnorm(test$y, mean = y_hat0, sd = rmse0, log = TRUE))#
+#
+# Compute lambda#
+lambda <- f_lik - f0_lik#
+#
+# Simulate null distribution#
+eps <- y_hat - test$y#
+null_sim <- function(b) {#
+  n <- length(test$y)#
+  y_b <- y_hat0 + sample(eps, size = n, replace = TRUE)#
+  # y_b <- rnorm(n, mean = y_hat0, sd = rmse)#
+  f0_lik <- sum(dnorm(y_b, mean = y_hat0, sd = rmse0, log = TRUE))#
+  lambda0 <- f_lik - f0_lik#
+  return(lambda0)#
+}#
+lambda0 <- foreach(b = seq_len(1e4), .combine = c) %dopar% null_sim(b)
+(sum(lambda >= lambda0) + 1) / (length(lambda0) + 1)
+library(microbenchmark)
+a <- microbenchmark(montecarlo = rnorm(1000, mean = y_hat0, sd = rmse = 0), bootstrap = y_hat0 + sample(eps, size = 1000, replace = TRUE))
+a <- microbenchmark(montecarlo = rnorm(1000, mean = y_hat0, sd = rmse), bootstrap = y_hat0 + sample(eps, size = 1000, replace = TRUE))
+a
+a <- microbenchmark(montecarlo = rnorm(1000, mean = y_hat0, sd = rmse), bootstrap = y_hat0 + sample(eps, size = 1000, replace = TRUE), times = 1000)
+a
+?dbinom
+library(qvalue)
+?empPvals
+x <- rnorm(1e6)
+y <- dnorm(x, log = T)
+hist(y, breaks = 100)
+y <- dnorm(x)
+hist(y, breaks = 100)
+?rf
+x <- rchisq(1e5)
+x <- rchisq(1e5, 1)
+y <- rchisq(1e5, 1)
+sum(x) - sum(y)
+library(boot)
+?boot
+x <- rnorm(100)#
+Y <- exp(x + rnorm(100)) > 1#
+datasim <- data.frame(Y, x)
+fit <- glm(Y ~ ., family = binomial, data = datasim)
+fit
+?glm
+library(bioplotr)
+library(edgeR)
+library(biobroom)
+data(airway)
+cnts <- assay(airway)
+library(SummarizedExperiment)
+cnts <- assay(airway)
+keep <- rowSums(cpm(cnts) > 1) <= 4
+mat <- cpm(cnts[keep, ], log = TRUE)
+clin <- colData(airway) %>% as_tibble(.) %>% select(Run, cell dex)
+library(tidyversee)
+library(tidyverse)
+clin <- colData(airway) %>% as_tibble(.) %>% select(Run, cell, dex)
+plot_drivers(mat, clin, index = 'Run')
+plot_drivers(mat, clin, index = 'Run', p.adj = 'fdr', alpha = 0.25)
+plot_drivers(mat, clin, index = 'Run'. alpha = 0.25)
+plot_drivers(mat, clin, index = 'Run', alpha = 0.25)
+plot_drivers(mat, clin, index = 'Run', alpha = 0.1)
+plot_drivers(mat, clin, index = 'Run', alpha = 0.05)
+plot_drivers(mat, clin, index = 'Run', alpha = 0.05, p.adj = 'bonferroni')
+?rowwise(.)
+df <- tibble(p = runif(1e4))
+head(df)
+df %>% mutate(q = p.adjust(p, method = 'fdr')) %>% rowwise(.) %>% mutate(x = p + 1) %>% mutate(q = p.adjust(p, method = 'fdr'))
+df %>% mutate(q = p.adjust(p, method = 'fdr')) %>% rowwise(.) %>% mutate(x = p + 1) %>% mutate(q2 = p.adjust(p, method = 'fdr'))
+df2 <- df %>% rowwise(.) %>% mutate(x = p + 1)
+head(df2)
+df2 <- df2 %>% ugroup(.)
+df2 <- df2 %>% ungroup(.)
+df2
+?map_dbl
+?row_number()
+df2 %>% mutate(idx = row_number())
+df2 %>% mutate(idx = row_number() + 1)
+head(clin)
+pca <- prcomp(t(mat))
+n.pc <- 5
+block <- NULL
+sig <- function(var, pc) {                     # p-val fn#
+  if (block %>% is.null || var %in% unblock || var == block) {#
+    mod <- lm(pca[, pc] ~ clin[[var]])#
+  } else {#
+    mod <- lm(pca[, pc] ~ clin[[var]] + clin[[block]])#
+  }#
+  if_else(clin[[var]] %>% is.numeric,#
+          summary(mod)$coef[2L, 4L], anova(mod)[1L, 5L])#
+}#
+df <- expand.grid(Feature = colnames(clin),    # Melt#
+                  PC = paste0('PC', seq_len(n.pc))) %>%#
+  rowwise(.) %>%#
+  mutate(Association = sig(Feature, PC)) %>%   # Populate#
+  ungroup(.)
+pca <- pca$x
+sig <- function(var, pc) {                     # p-val fn#
+  if (block %>% is.null || var %in% unblock || var == block) {#
+    mod <- lm(pca[, pc] ~ clin[[var]])#
+  } else {#
+    mod <- lm(pca[, pc] ~ clin[[var]] + clin[[block]])#
+  }#
+  if_else(clin[[var]] %>% is.numeric,#
+          summary(mod)$coef[2L, 4L], anova(mod)[1L, 5L])#
+}#
+df <- expand.grid(Feature = colnames(clin),    # Melt#
+                  PC = paste0('PC', seq_len(n.pc))) %>%#
+  rowwise(.) %>%#
+  mutate(Association = sig(Feature, PC)) %>%   # Populate#
+  ungroup(.)
+head(df)
+clin <- clin %>% select(-Run)
+sig <- function(var, pc) {                     # p-val fn#
+  if (block %>% is.null || var %in% unblock || var == block) {#
+    mod <- lm(pca[, pc] ~ clin[[var]])#
+  } else {#
+    mod <- lm(pca[, pc] ~ clin[[var]] + clin[[block]])#
+  }#
+  if_else(clin[[var]] %>% is.numeric,#
+          summary(mod)$coef[2L, 4L], anova(mod)[1L, 5L])#
+}#
+df <- expand.grid(Feature = colnames(clin),    # Melt#
+                  PC = paste0('PC', seq_len(n.pc))) %>%#
+  rowwise(.) %>%#
+  mutate(Association = sig(Feature, PC)) %>%   # Populate#
+  ungroup(.)
+head(df)
+tail(df)
+df2 <- expand.grid(Feature = colnames(clin),    # Melt#
+                  PC = paste0('PC', seq_len(n.pc))) %>%#
+  mutate(Association = row_number() %>% map_dbl(function(x) {#
+    var <- df$Feature[x]#
+    pc <- df$PC[x]#
+    if (block %>% is.null || var %in% unblock || var == block) {#
+      mod <- lm(pca[, pc] ~ clin[[var]])#
+    } else {#
+      mod <- lm(pca[, pc] ~ clin[[var]] + clin[[block]])#
+    }#
+    if_else(clin[[var]] %>% is.numeric,#
+            summary(mod)$coef[2L, 4L], anova(mod)[1L, 5L])#
+  }))
+head(df2)
+identical(as.data.frame(df), df2)
+df <- NULL
+df2 <- df2 %>% mutate(idx = row_number(.))
+df2 <- df2 %>% mutate(idx = row_number())
+sig <- function(x) {                           # p-val fn#
+  j <- df$Feature[x]#
+  pc <- df$PC[x]#
+  if (block %>% is.null || j %in% unblock || j == block) {#
+    mod <- lm(pca[, pc] ~ clin[[j]])#
+  } else {#
+    mod <- lm(pca[, pc] ~ clin[[j]] + clin[[block]])#
+  }#
+  if_else(clin[[j]] %>% is.numeric,#
+          summary(mod)$coef[2L, 4L], anova(mod)[1L, 5L])#
+}#
+df <- expand.grid(Feature = colnames(clin),    # Melt#
+                  PC = paste0('PC', seq_len(n.pc))) %>%#
+  mutate(Association = row_number() %>% map_dbl(~ sig(.x)))
+df <- expand.grid(Feature = colnames(clin),    # Melt#
+                  PC = paste0('PC', seq_len(n.pc))) %>%#
+  mutate(Association = row_number() %>% map_dbl(function(x) {#
+    j <- df$Feature[x]#
+    pc <- df$PC[x]#
+    if (block %>% is.null || j %in% unblock || j == block) {#
+      mod <- lm(pca[, pc] ~ clin[[j]])#
+    } else {#
+      mod <- lm(pca[, pc] ~ clin[[j]] + clin[[block]])#
+    }#
+    if_else(clin[[j]] %>% is.numeric,#
+            summary(mod)$coef[2L, 4L], anova(mod)[1L, 5L])#
+  }))
+df <- expand.grid(Feature = colnames(clin),    # Melt#
+                  PC = paste0('PC', seq_len(n.pc)))#
+sig <- function(x) {                           # p-val fn#
+  j <- df$Feature[x]#
+  pc <- df$PC[x]#
+  if (block %>% is.null || j %in% unblock || j == block) {#
+    mod <- lm(pca[, pc] ~ clin[[j]])#
+  } else {#
+    mod <- lm(pca[, pc] ~ clin[[j]] + clin[[block]])#
+  }#
+  if_else(clin[[j]] %>% is.numeric,#
+          summary(mod)$coef[2L, 4L], anova(mod)[1L, 5L])#
+}#
+df <- df %>% mutate(Association = row_number() %>% map_dbl(~ sig(.x)))
+head(df)
+lapply(df, class)
+df$Feature[1]
+clin[[df$Feature[j]]]
+clin[[df$Feature[1]]]
+pca[1:5, 1:5]
+head(pca[, df$PC[1]])
+library(kernlab)
+kf <- rbfdot(sigma = 1e4)
+k_mat <- kerneltMatrix(kernel = kf, x = t(mat))
+k_mat <- kernelMatrix(kernel = kf, x = t(mat))
+pca2 <- kpca(k_mat)
+pca2 <- rotated(pca2)
+pca2[1:5, 1:5]
+head(pca2[, df$PC[1]])
+df$PC[1]
+head(pca2[, df$PC[2]])
+colnames(pca2) <- paste0('PC', ncol(pca2))
+colnames(pca2) <- paste0('PC', 1:ncol(pca2))
+head(pca2[, df$PC[2]])
+df$PC[2]
+head(df)
+colnames(pca2) <- NULL
+head(pca2[, df$PC3])
+colnames(pca2) <- paste0('PC', 1:ncol(pca2))
+colnames(pca2) <- NULL
+head(pca2[, df$PC[3]])
+df$PC3
+df$PC[3]
+# Load libraries, register cores#
+library(memisc)#
+library(data.table)#
+library(ggsci)#
+library(RColorBrewer)#
+library(tidyverse)#
+library(doMC)#
+registerDoMC(4)#
+#
+# Import data#
+df <- readRDS('./Data/likes_melt.rds')#
+df[partyId == 1, pId := 'Conservative'#
+  ][partyId == 2, pId := 'Labour'#
+  ][partyId == 3, pId := 'Lib Dem']#
+#
+# PHI by party over time#
+df %>%#
+  filter(!is.na(phi), !is.na(weight), year > 1992) %>%#
+  group_by(year, pId) %>%#
+  summarise(PHI = weighted.mean(phi, weight),#
+            SE = sd(phi) / sqrt(length(phi))) %>%#
+  rename(Year = year) %>%#
+  select(Year, PHI, SE, pId) %>%#
+  ggplot(aes(Year, PHI, group = pId, color = pId)) + #
+  geom_point() + #
+  geom_smooth(method = 'gam', se = FALSE, formula = y ~ s(x, k = 6)) + #
+  geom_errorbar(aes(ymin = PHI - SE, ymax = PHI + SE), width = 0.25) +#
+  labs(title = 'PHI by Party Affiliation',#
+       y = 'Personal Hostility Index') + #
+  scale_color_manual(name = 'Party Affiliation',#
+                     labels = c('Conservative', 'Labour', 'Lib Dem'),#
+                     values = pal_d3()(4)[c(1, 4, 2)]) +#
+  theme_bw() + #
+  theme(plot.title = element_text(hjust = 0.5))
+setwd('./Documents/CPI/cpi_paper/4.2_Real_Data/4.2.2_Breast_Cancer')
+# Set seed#
+set.seed(123, kind = "L'Ecuyer-CMRG")#
+#
+# Load libraries, register cores#
+library(data.table)#
+library(limma)#
+library(qusage)#
+library(corpcor)#
+library(knockoff)#
+library(ranger)#
+library(stringr)#
+library(tidyverse)#
+library(doMC)#
+registerDoMC(8)#
+#
+# Import gene expression data#
+dat <- readRDS('GSE165.rds')#
+#
+# C2 gene sets#
+c2 <- read.gmt('c2.all.v6.2.symbols.gmt')#
+tmp1 <- data.table(GeneSymbol = colnames(dat$x))#
+tmp2 <- seq_along(c2) %>%#
+  map_df(~ data.table(Pathway = names(c2)[.x],#
+                   GeneSymbol = unlist(c2[[.x]])) %>%#
+           merge(tmp1, by = 'GeneSymbol'))#
+c2 <- lapply(unique(tmp2$Pathway), function(p) tmp2[Pathway == p, GeneSymbol])#
+names(c2) <- unique(tmp2$Pathway)#
+#
+# Remove sets with fewer than 25 genes#
+pway_size <- sapply(seq_along(c2), function(p) length(c2[[p]]))#
+keep <- pway_size >= 25#
+c2 <- c2[keep]#
+#
+# Build original model#
+n <- nrow(dat$x)#
+p <- ncol(dat$x)#
+df <- data.frame(dat$x, y = dat$y)#
+rf <- ranger(data = df, dependent.variable.name = 'y', #
+             num.trees = 1e4, mtry = floor(p / 3),#
+             keep.inbag = TRUE, classification = TRUE,#
+             num.threads = 8)#
+#
+# Record OOB index#
+oob_idx <- ifelse(simplify2array(rf$inbag.counts) == 0, TRUE, NA)#
+#
+# Cross entropy loss function#
+loss_fn <- function(mod, dat) {#
+  preds <- predict(mod, dat, predict.all = TRUE, num.threads = 8)$predictions#
+  y_hat <- rowMeans(oob_idx * preds, na.rm = TRUE)#
+  loss <- -(df$y * log(y_hat) + (1 - df$y) * log(1 - y_hat))#
+  return(loss)#
+}#
+loss <- loss_fn(rf, df)
+head(loss)
+hist(loss, breaks = 100)
+?glm
+fit <- glm(formula= vs ~ wt + disp, data=mtcars, family=binomial)
+head(residuals(fit))
+?residuals.glm
+a <- residuals(fit, type = 'deviance')
+summary(a)
+summary(exp(a))
+p <- runif(1e5)
+a <- -log(p)
+summary(p)
+summary(a)
+summary(exp(a))
+summary(exp(-a))
+a <- residuals(fit, type = 'deviance')
+summary(exp(-a))
+?predict.glm
+y_hat <- predict(fit, type = 'response')
+head(y_hat)
+summary(y_hat)
+head(mtcars$vs)
+ce <- -(mtcars$vs * log(y_hat) + (1 - mtcars$vs) * log(1 - y_hat))
+head(ce)
+summary(ce)
+summary(exp(-ce))
+# Load libraries#
+library(tidyverse)#
+library(ranger)#
+#
+# Simulate function#
+sim <- function(n, p) {#
+  x <- matrix(runif(n * p), ncol = p, #
+              dimnames = list(NULL, paste0('x', seq_len(p))))#
+  y <- rnorm(n)#
+  return(data.frame(x, y))#
+}#
+#
+# Training and test sets#
+train <- sim(n = 1000, p = 100)#
+test <- sim(n = 1000, p = 100)
+# Train null and alternative models#
+f <- ranger(y ~ ., data = train)#
+f0 <- ranger(y ~ ., data = train[, -1])
+?rnorm
+# Compute likelihoods#
+y_hat <- predict(f, test)$predictions#
+rmse <- sqrt(mean((y_hat - test$y)^2))#
+y_hat0 <- predict(f0, test)$predictions#
+rmse0 <- sqrt(mean((y_hat0 - test$y)^2))#
+f_lik <- dnorm(df$y, mean = y_hat, sd = rmse, log = TRUE)#
+f0_lik <- dnorm(df$y, mean = y_hat0, sd = rmse0, log = TRUE)#
+lambda <- f_lik - f0_lik#
+#
+# Just out of curiosity...#
+ss <- sum((y_hat - test$y)^2))#
+ss0 <- sum((y_hat0 - test$y)^2))#
+f_stat <- (ss0 - ss) / ss#
+#
+# Simulate null distribution#
+eps <- y_hat - test$y#
+null_sim <- function(b) {#
+  n <- length(test$y)#
+  y_b <- y_hat0 + sample(eps, size = n, replace = TRUE)#
+  # y_b <- rnorm(n, mean = y_hat0, sd = rmse)#
+  f0_lik <- sum(dnorm(y_b, mean = y_hat0, sd = rmse0, log = TRUE))#
+  lambda0 <- f_lik - f0_lik#
+  ss0_b <- sum((y_hat0 - y_b)^2)#
+  f0_stat <- (ss0_b - ss) / ss#
+  out <- data.frame(lambda0, f0_stat)#
+  return(out)#
+}#
+lambda0 <- foreach(b = seq_len(1e4), .combine = rbind) %dopar% null_sim(b)
+# Just out of curiosity...#
+ss <- sum((y_hat - test$y)^2)#
+ss0 <- sum((y_hat0 - test$y)^2)#
+f_stat <- (ss0 - ss) / ss#
+#
+# Simulate null distribution#
+eps <- y_hat - test$y#
+null_sim <- function(b) {#
+  n <- length(test$y)#
+  y_b <- y_hat0 + sample(eps, size = n, replace = TRUE)#
+  # y_b <- rnorm(n, mean = y_hat0, sd = rmse)#
+  f0_lik <- sum(dnorm(y_b, mean = y_hat0, sd = rmse0, log = TRUE))#
+  lambda0 <- f_lik - f0_lik#
+  ss0_b <- sum((y_hat0 - y_b)^2)#
+  f0_stat <- (ss0_b - ss) / ss#
+  out <- data.frame(lambda0, f0_stat)#
+  return(out)#
+}#
+lambda0 <- foreach(b = seq_len(1e4), .combine = rbind) %dopar% null_sim(b)
+n <- test$y
+n <- length(test$y)
+n
+head(lambda0)
+df <- lambda0
+tail(df)
+null_sim(1)
+# Compute likelihoods#
+y_hat <- predict(f, test)$predictions#
+rmse <- sqrt(mean((y_hat - test$y)^2))#
+y_hat0 <- predict(f0, test)$predictions#
+rmse0 <- sqrt(mean((y_hat0 - test$y)^2))#
+f_lik <- sum(dnorm(df$y, mean = y_hat, sd = rmse, log = TRUE))#
+f0_lik <- sum(dnorm(df$y, mean = y_hat0, sd = rmse0, log = TRUE))#
+lambda <- f_lik - f0_lik#
+#
+# Just out of curiosity...#
+ss <- sum((y_hat - test$y)^2)#
+ss0 <- sum((y_hat0 - test$y)^2)#
+f_stat <- (ss0 - ss) / ss#
+#
+# Simulate null distribution#
+eps <- y_hat - test$y#
+null_sim <- function(b) {#
+  n <- length(test$y)#
+  y_b <- y_hat0 + sample(eps, size = n, replace = TRUE)#
+  # y_b <- rnorm(n, mean = y_hat0, sd = rmse)#
+  f0_lik <- sum(dnorm(y_b, mean = y_hat0, sd = rmse0, log = TRUE))#
+  lambda0 <- f_lik - f0_lik#
+  ss0_b <- sum((y_hat0 - y_b)^2)#
+  f0_stat <- (ss0_b - ss) / ss#
+  out <- data.frame(lambda0, f0_stat)#
+  return(out)#
+}#
+df <- foreach(b = seq_len(1e4), .combine = rbind) %dopar% null_sim(b)
